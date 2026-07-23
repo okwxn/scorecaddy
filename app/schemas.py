@@ -1,5 +1,5 @@
 from typing import Dict, List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 class Player(BaseModel):
     name: str
@@ -18,8 +18,8 @@ class Course(BaseModel):
     slope_rating: int
 
 class Match(BaseModel):
-    players: List[Player]
+    players: list[Player] = Field(default_factory=list)
     course: Optional[Course] = None
     game_format: Optional[str] = None
-    shots_given: Dict[str, List[int]] = {}
-    scores: Dict[str, int] = {}
+    shots_given: Dict[str, List[int]] = Field(default_factory=dict)
+    scores: Dict[str, int] = Field(default_factory=dict)
