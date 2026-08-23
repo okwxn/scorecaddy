@@ -7,9 +7,6 @@ app = FastAPI()
 app.state.current_match = Match()
 app.state.current_course = Course()
 
-# TODO: implement function to dynamically calculate the shots_given list using the player's handicap, course slope, and rating
-# TODO: Persist matches in a lightweight database (like SQLite) instead of keeping them in volatile application state
-
 
 def calculate_stableford(net_score_for_hole: int) -> int:
     """Stableford point system based on strokes relative to par."""
@@ -25,7 +22,6 @@ def calculate_stableford(net_score_for_hole: int) -> int:
 def calculate_split_sixes(stroke_counts: dict[str, int]) -> dict[str, int]:
     """Split Sixes (threesome game) points allocation logic."""
     # Split sixes splits 6 points per hole among 3 players based on scores.
-    # TODO: implement 3-player ties/win distribution logic here
 
     return {}
 
@@ -39,38 +35,26 @@ def create_match(match: Match, request: Request):
     return match
 
 @app.put("/matches")
-def update_match(stroke_counts: dict[str, int], hole: int, request: Request):
+def update_match(player_shots: dict[str, int], hole: int, request: Request):
     current_match: Match = request.app.state.current_match
-    current_course: Course = request.app.state.current_course
+    net_strokes_players = []
 
-    # Guard rail: Ensure course data exists before running math
-    if not current_course.par_by_hole or hole >= len(current_course.par_by_hole):
-        raise HTTPException(status_code=400, detail="Invalid hole or course data not loaded")
+    match (current_match.scoring_system, current_match.game_format):
+        case (ScoringSystem.stroke_play, GameFormat.match_play):
+            for player_name, gross_strokes in player_shots.items(): # 2 iterations in every Match Play
+                shots_given = current_match.shots_given[player_name][hole]
+                net_stroke = gross_strokes - shots_given
+                net_strokes_players.append([player_name, net_stroke])
 
-    par = current_course.par_by_hole[hole]
-    net_strokes = defaultdict(lambda: [0] * 18)
+            if net_strokes_players[0][1] > net_strokes_players[1][1]:
+                current_match.scores[net_strokes_players[0][0]] = current_match.scores.get(net_strokes_players[0][0], 0) + 1
+            elif net_strokes_players[0][1] < net_strokes_players[1][1]:
+                current_match.scores[net_strokes_players[1][0]] = current_match.scores.get(net_strokes_players[1][0], 0) + 1
+            else:
+                pass
 
-    match (current_match.game_format, current_match.scoring_system):
-
-        # TODO: cover all cases below
-
-        case (GameFormat.match_play, ScoringSystem.stroke_play):
-            for player_name, gross_strokes in stroke_counts.items():
-                # Safely get shots given for this specific player (default to 0 if missing)
-                player_shots = current_match.shots_given.get(player_name, [0] * 18)
-                shots_on_hole = player_shots[hole] if hole < len(player_shots) else 0
-                
-                # Calculate net strokes relative to par for Stableford
-                net_strokes = gross_strokes - shots_on_hole
-                net_relative_to_par = net_strokes - par
-                
-                # Calculate points and update running score total
-                hole_points = calculate_stableford(net_relative_to_par)
-                current_match.scores[player_name] = current_match.scores.get(player_name, 0) + hole_points
-
-        case (GameFormat.split_sixes, ScoringSystem.stroke_play):
-            # Split Sixes requires analyzing all player scores on the hole together
-            sixes_points = calculate_split_sixes(stroke_counts)
+        case (ScoringSystem.stroke_play, GameFormat.split_sixes): # TODO next
+            sixes_points = calculate_split_sixes(player_shots)
             for player_name, points in sixes_points.items():
                 current_match.scores[player_name] = current_match.scores.get(player_name, 0) + points
                 

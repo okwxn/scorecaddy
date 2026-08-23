@@ -8,8 +8,8 @@ class ScoringSystem(str, Enum):
 
 class GameFormat(str, Enum): # dictates how the scores are matched against playing partners
     match_play = "match_play"
-    skins = "skins"
     split_sixes = "split_sixes"
+    skins = "skins"
 
 class Player(BaseModel):
     name: str
