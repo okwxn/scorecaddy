@@ -44,13 +44,21 @@ def calculate_split_sixes(net_stroke_players: list[list[int]]) -> dict[str, int]
 def read_root():
     return "Welcome to ScoreCaddy"
 
+@app.get("/matches")
+def get_match():
+    return app.state.current_match
+
 @app.post("/matches")
 def create_match(match: Match, request: Request):
     request.app.state.current_match = match
     return match
 
 @app.put("/matches")
-def update_match(player_shots: dict[str, int], hole: int, request: Request):
+def update_match(
+    player_shots: dict[str, int], 
+    hole: int, 
+    request: Request
+):
     current_match: Match = request.app.state.current_match
     net_strokes_players = []
 
@@ -85,16 +93,3 @@ def update_match(player_shots: dict[str, int], hole: int, request: Request):
 
         case _:
             raise HTTPException(status_code=400, detail="Game format not yet supported")
-
-@app.get("/players/{name}")
-def get_player(name: str, request: Request):
-    current_match: Match = request.app.state.current_match
-
-    for player in current_match.players:
-        if name == player.name:
-            return {
-                "player_name": player.name, 
-                "handicap": player.handicap
-            }
-    
-    raise HTTPException(status_code=404, detail=f"Player {name} not found")
