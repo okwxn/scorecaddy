@@ -1,12 +1,10 @@
 from fastapi import FastAPI, Request, HTTPException
-from schemas import Match, Course, ScoringSystem, GameFormat
+from schemas import Match, Course, Player, ScoringSystem, GameFormat
 from collections import defaultdict
 
 app = FastAPI()
 
-app.state.current_match = Match()
-app.state.current_course = Course()
-
+app.state.current_match = None
 
 def calculate_stableford(net_score_for_hole: int) -> int:
     """Stableford point system based on strokes relative to par."""
@@ -44,14 +42,14 @@ def calculate_split_sixes(net_stroke_players: list[list[int]]) -> dict[str, int]
 def read_root():
     return "Welcome to ScoreCaddy"
 
-@app.get("/matches")
-def get_match():
-    return app.state.current_match
-
 @app.post("/matches")
 def create_match(match: Match, request: Request):
     request.app.state.current_match = match
     return match
+
+@app.get("/matches")
+def get_match():
+    return app.state.current_match
 
 @app.put("/matches")
 def update_match(
@@ -76,7 +74,7 @@ def update_match(
             else:
                 return current_match
 
-        case (ScoringSystem.stroke_play, GameFormat.split_sixes): # TODO next
+        case (ScoringSystem.stroke_play, GameFormat.split_sixes):
             for player_name, gross_strokes in player_shots.items(): # 3 iterations in Split Sixes
                 shots_given = current_match.shots_given[player_name][hole]
                 net_stroke = gross_strokes - shots_given
