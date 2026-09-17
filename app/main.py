@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, HTTPException
-from schemas import Match, Course, Player, ScoringSystem, GameFormat
+from .schemas import Match, Course, Player, ScoringSystem, GameFormat
 from collections import defaultdict
 
 app = FastAPI()

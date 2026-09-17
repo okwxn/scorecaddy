@@ -23,9 +23,10 @@ class Course(BaseModel):
     slope_rating: int = 113
 
     @model_validator(mode="before")
-    def set_default_course_rating(self) -> "Course":
-        self.course_rating = float(sum(self.par_by_hole))
-        return self
+    def set_default_course_rating(cls, data):
+        if isinstance(data, dict) and "par_by_hole" in data:
+            data["course_rating"] = float(sum(data["par_by_hole"]))
+        return data
 
 class Match(BaseModel):
     players: List[Player]

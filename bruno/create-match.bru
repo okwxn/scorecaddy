@@ -1,0 +1,48 @@
+meta {
+  name: Create Match
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:8000/matches
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "players": [
+      {
+        "name": "Ohhun",
+        "handicap": 8.8
+      },
+      {
+        "name": "James",
+        "handicap": 13.1
+      },
+      {
+        "name": "Chan",
+        "handicap": 4.6
+      }
+    ],
+    "course": {
+      "name": "Hampton Court Palace GC",
+      "par_by_hole": [5,4,3,4,4,4,5,3,4,5,4,4,3,4,4,4,3,5],
+      "stroke_indexes": [2,18,14,13,11,4,1,5,17,6,10,8,7,15,3,16,9,12],
+      "slope_rating": 113
+    },
+    "shots_given": {
+      "Ohhun": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "James": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "Chan": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    },
+    "scores": {
+      "Ohhun": 0,
+      "James": 0,
+      "Chan": 0
+    },
+    "game_format": "match_play",
+    "scoring_system": "stroke_play"
+  }
+}
