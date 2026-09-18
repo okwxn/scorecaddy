@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, HTTPException
-from .schemas import Match, Course, Player, ScoringSystem, GameFormat
+from schemas import Match, Course, Player
 from collections import defaultdict
 
 app = FastAPI()
@@ -57,12 +57,12 @@ def update_match(
     hole: int, 
     request: Request
 ):
-    current_match: Match = request.app.state.current_match
+    current_match = request.app.state.current_match
     net_strokes_players = []
 
-    match (current_match.scoring_system, current_match.game_format):
-        case (ScoringSystem.stroke_play, GameFormat.match_play):
-            for player_name, gross_strokes in player_shots.items(): # 2 iterations in Match Play
+    match (len(current_match.players)):
+        case (2): # 1 vs 1, net strokes match play 
+            for player_name, gross_strokes in player_shots.items():
                 shots_given = current_match.shots_given[player_name][hole]
                 net_stroke = gross_strokes - shots_given
                 net_strokes_players.append([player_name, net_stroke])
@@ -74,8 +74,8 @@ def update_match(
             else:
                 return current_match
 
-        case (ScoringSystem.stroke_play, GameFormat.split_sixes):
-            for player_name, gross_strokes in player_shots.items(): # 3 iterations in Split Sixes
+        case (3): # 1 vs 1 vs 1, net strokes split sixes
+            for player_name, gross_strokes in player_shots.items():
                 shots_given = current_match.shots_given[player_name][hole]
                 net_stroke = gross_strokes - shots_given
                 net_strokes_players.append([player_name, net_stroke])
@@ -90,4 +90,4 @@ def update_match(
             return current_match    
 
         case _:
-            raise HTTPException(status_code=400, detail="Game format not yet supported")
+            raise HTTPException(status_code=400, detail="4 player games not yet supported")
