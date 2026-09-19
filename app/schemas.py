@@ -1,7 +1,6 @@
 from typing import Dict, List
 from pydantic import BaseModel, Field, model_validator
 
-
 class Player(BaseModel):
     name: str
     handicap: float

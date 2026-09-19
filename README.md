@@ -10,3 +10,7 @@ $$\text{Course Handicap} = \text{Handicap Index} \times \left(\frac{\text{Slope 
 
 - Slope Rating: Adjusts a player's handicap for how much harder the course plays for a bogey golfer compared to a scratch golfer
 - Course Rating: Adjusts for the baseline difficulty of the specific tees chosen (e.g., tips vs. forward tees)
+
+## Reference
+
+- https://www.usga.org/handicapping/roh/Content/rules/6%201a%2018%20holes.htm

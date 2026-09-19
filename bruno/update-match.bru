@@ -1,23 +1,23 @@
 meta {
   name: Update Match
   type: http
-  seq: 2
+  seq: 3
 }
 
 put {
-  url: http://localhost:8000/matches?hole=0
+  url: http://localhost:8000/match?hole=3
   body: json
   auth: none
 }
 
 params:query {
-  hole: 0
+  hole: 3
 }
 
 body:json {
   {
-    "Abe": ,
-    "Bob": ,
-    "Chan": 
+    "Abe": 6,
+    "Bob": 5,
+    "Chan": 4
   }
 }

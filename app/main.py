@@ -1,21 +1,52 @@
 from fastapi import FastAPI, Request, HTTPException
 from schemas import Match, Course, Player
 from collections import defaultdict
+from typing import Dict, List
+from math import floor
 
 app = FastAPI()
 
 app.state.current_match = None
 
-def calculate_stableford(net_score_for_hole: int) -> int:
-    """Stableford point system based on strokes relative to par."""
-    # Example standard Stableford: Net Albatross=5, Eagle=4, Birdie=3, Par=2, Bogey=1, Double+=0
-    match net_score_for_hole:
-        case -3: return 5 # Albatross
-        case -2: return 4 # Eagle
-        case -1: return 3 # Birdie
-        case 0: return 2 # Par
-        case 1: return 1 # Bogey
-        case _: return 0 # Double Bogey or worse
+def set_shots_given(
+        course: Course, 
+        players: List[Player]
+    ) -> Dict[str, List[int]]:
+
+    slope_rating, course_rating, course_par = course.slope_rating, course.course_rating, sum(course.par_by_hole)
+    handicaps = defaultdict(int)
+    min_handicap = 54
+    for player in players:
+        player_name = player.name
+        course_handicap = floor(0.5 + (player.handicap * (slope_rating / 113) + (course_rating - course_par)))
+        handicaps[player_name] = course_handicap
+        min_handicap = min(min_handicap, course_handicap)
+
+    max_net_handicap = 0
+    for player_name, course_handicap in handicaps.items():
+        net_handicap = course_handicap - min_handicap
+        handicaps[player_name] = net_handicap
+        max_net_handicap = max(max_net_handicap, net_handicap)
+
+    stroke_indexes = course.stroke_indexes
+    shots_given = {player.name: [0] * 18 for player in players}
+
+    for hole in range(18):
+        stroke_index = stroke_indexes[hole]
+
+        for player in players:
+            player_name = player.name
+            handicap = handicaps[player_name]
+
+            base_shots = handicap // 18
+            extra_stroke_cutoff = handicap % 18
+
+            if stroke_index <= extra_stroke_cutoff:
+                shots_given[player_name][hole] = 1 + base_shots
+            else:
+                shots_given[player_name][hole] = base_shots
+
+    return shots_given
 
 def calculate_split_sixes(net_stroke_players: list[list[int]]) -> dict[str, int]:
     """Allocate six points by net score, splitting tied positions equally."""
@@ -37,21 +68,21 @@ def calculate_split_sixes(net_stroke_players: list[list[int]]) -> dict[str, int]
 
     return dict(net_score_players)
 
-
 @app.get("/")
 def read_root():
     return "Welcome to ScoreCaddy"
 
-@app.post("/matches")
-def create_match(match: Match, request: Request):
-    request.app.state.current_match = match
-    return match
-
-@app.get("/matches")
+@app.get("/match")
 def get_match():
     return app.state.current_match
 
-@app.put("/matches")
+@app.post("/match")
+def create_match(match: Match, request: Request):
+    match.shots_given = set_shots_given(match.course, match.players)
+    request.app.state.current_match = match
+    return match
+
+@app.put("/match")
 def update_match(
     player_shots: dict[str, int], 
     hole: int, 
@@ -81,8 +112,8 @@ def update_match(
                 net_strokes_players.append([player_name, net_stroke])
 
             sixes_points: dict[str, int] = calculate_split_sixes(net_strokes_players)
-            for player, score in sixes_points.items():
-                current_match.scores[player] += score
+            for player_name, score in sixes_points.items():
+                current_match.scores[player_name] += score
 
             lowest_score = min(current_match.scores.values())
             current_match.scores = {player: score - lowest_score for player, score in current_match.scores.items()}
